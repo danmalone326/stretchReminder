@@ -1,0 +1,95 @@
+#!/usr/bin/osascript
+
+global debug
+set debug to false
+
+on writeTextToFile(theText, theFile, overwriteExistingContent)
+    if debug then 
+        try
+            set t to (time string of (current date))
+ 
+            -- Convert the file to a string
+            set theFile to theFile as string
+ 
+            -- Open the file for writing
+            set theOpenedFile to open for access file theFile with write permission
+ 
+            -- Clear the file if content should be overwritten
+            if overwriteExistingContent is true then set eof of theOpenedFile to 0
+ 
+            -- Write the new content to the file
+            write t & " - " & theText to theOpenedFile starting at eof
+ 
+            -- Close the file
+            close access theOpenedFile
+ 
+            -- Return a boolean indicating that writing was successful
+            return true
+ 
+            -- Handle a write error
+        on error
+ 
+            -- Close the file
+            try
+                close access file theFile
+            end try
+ 
+            -- Return a boolean indicating that writing failed
+            return false
+        end try
+    end if
+end writeTextToFile
+
+
+set theFile to (((path to desktop folder) as string) & "stretchReminder.log")
+writeTextToFile("Start\n", theFile, false)
+
+set myName to do shell script "id -F | cut -d\" \" -f1"
+ 
+set dialogText to "Hey " & myName & "! Remember to stand up and stretch!"
+set dialogTitle to "stretchReminder"
+
+set defaultBetweenDuration to 30
+set responseTimeout to 60
+   
+set response to display dialog "How many minutes between stretching?" with title dialogTitle default answer defaultBetweenDuration with icon note buttons {"Continue"} default button "Continue" giving up after responseTimeout
+set delayString to text returned of response
+set delayNum to delayString as integer
+
+set moreButton to "I did! Remind me again in " & delayString & " minutes."
+set doneButton to "All done for today."
+
+set continueLoop to true
+set gaveUp to false
+repeat while continueLoop
+
+    if not gaveUp then
+        delay (delayNum * 60)
+    end if
+
+    writeTextToFile("Display\n", theFile, false)
+    
+    try
+#         activate
+        set response to display dialog dialogText with title dialogTitle buttons {moreButton, doneButton} default button moreButton with icon stop
+        writeTextToFile(response & "\n", theFile, false)
+
+        set continueLoop to ((button returned of response) is equal to moreButton)
+    
+        set gaveUp to (gave up of response)
+    on error errStr number errorNumber
+        writeTextToFile( errorNumber & " " & errStr & "\n", theFile, false)
+
+        if errorNumber = -1728 then
+            set gaveUp to false
+        else if errorNumber = -1712 then
+            set gaveUp to true
+        else
+            error errStr number errorNumber
+        end if
+    end try
+    
+
+end repeat
+
+quit

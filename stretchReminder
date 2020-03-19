@@ -1,0 +1,40 @@
+#!/usr/bin/osascript
+
+set myName to do shell script "id -F | cut -d\" \" -f1"
+ 
+set dialogText to "Hey " & myName & "! Remember to stand up and stretch!"
+set dialogTitle to "stretchReminder"
+   
+set response to display dialog "How many minutes between stretching?" with title dialogTitle default answer "30" with icon note buttons {"Continue"} default button "Continue"
+set delayString to text returned of response
+set delayNum to delayString as integer
+
+set moreButton to "I did! Remind me again in " & delayString & " minutes."
+set doneButton to "All done for today."
+
+set continueLoop to true
+set gaveUp to false
+repeat while continueLoop
+
+    if not gaveUp then
+        delay (delayNum * 60)
+    end if
+
+    set response to display dialog dialogText with title dialogTitle buttons {moreButton, doneButton} default button moreButton with icon stop
+
+    set continueLoop to ((button returned of response) is equal to moreButton)
+    
+    try
+        set gaveUp to (gave up of response)
+    on error errStr number errorNumber
+        if errorNumber = -1728 then
+            set gaveUp to false
+        else
+            error errStr number errorNumber
+        end if
+    end try
+    
+
+end repeat
+
+quit
