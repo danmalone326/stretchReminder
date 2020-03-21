@@ -28,7 +28,7 @@ function makeTempDirectory () {
 }
 
 function cleanUp () {
-    if [! -z $tempDirectory ]
+    if [ ! -z $tempDirectory ]
     then
         rm -rf "${tempDirectory}"
     fi
@@ -81,17 +81,14 @@ then  # Update
     installedVersion=$(getInstalledVersion)
     availableVersion=$(getAvailableVersion)
     
-    echo $installedVersion
-    echo $availableVersion
-    
     if [ "$installedVersion" == "$availableVersion" ]
     then
         echo "Already running the lastest version: ${installedVersion}"
         exit 0
     fi
     
-    echo "Moving old version to trash." 
-#     toTrash $appDirectory
+    echo "Upgrading from version ${installedVersion} to ${availableVersion}" 
+    toTrash "${appDirectory}"
 else  # New install
     echo "New install."
 fi
@@ -103,5 +100,6 @@ curl --silent "${remoteContentsURL}/Info.plist" --output "${contentsDirectory}/I
 curl --silent "${remoteMacosURL}/${appName}" --output "${macosDirectory}/${appName}" 
 curl --silent "${remoteResourcesURL}/${appName}.icns" --output "${resourcesDirectory}/${appName}.icns" 
 
+chmod +x "${macosDirectory}/${appName}" 
 
 cleanUp
