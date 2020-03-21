@@ -1,0 +1,46 @@
+#!/bin/bash
+
+action=$1
+
+majorOption="+major"
+minorOption="+minor"
+
+plistFilename="Info.plist"
+plistDirectory=$(dirname "${BASH_SOURCE[0]}")
+
+plistFilePath="${plistDirectory}/${plistFilename}"
+
+# /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString string 1.0.0" Info.plist
+# /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist
+# CFBundleVersion
+
+currentVersion=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${plistFilePath}")
+echo $currentVersion
+
+IFS='.' read -ra major minor patch <<< "$currentVersion"
+major=$(echo $currentVersion | cut -d"." -f1)
+minor=$(echo $currentVersion | cut -d"." -f2)
+patch=$(echo $currentVersion | cut -d"." -f3)
+
+if [ "$action" == "$minorOption" ]
+then
+    minor=$((${minor} + 1))
+elif [ "$action" == "$majorOption" ]
+then
+    major=$((${major} + 1))
+    minor=0
+else
+    command=$(basename "${BASH_SOURCE[0]}")
+    echo "usage: ${command} ( ${majorOption} | ${minorOption} )"
+    exit 1
+fi
+
+echo $minor
+
+newVersion="$((${major} + 0)).$((${minor} + 0)).$((${patch} + 0))"
+echo $newVersion
+
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${newVersion}" "${plistFilePath}"
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${newVersion}" "${plistFilePath}"
+
+/usr/libexec/PlistBuddy -c "Print" Info.plist

@@ -1,12 +1,38 @@
 #!/bin/bash
+# Like this: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 
-# Application Directories
-appDirectory="${HOME}/Applications/stretchReminder.app"
+appName="stretchReminder"
+
+
+# Remote URLs
+remoteAppURL="https://raw.githubusercontent.com/danmalone326/stretchReminder/master/${appName}.app"
+remoteContentsURL="${remoteAppURL}/Contents"
+remoteMacosURL="${remoteContentsURL}/MacOS"
+remoteResourcesURL="${remoteContentsURL}/Resources"
+
+# Local Directories
+appDirectory="${HOME}/Applications/${appName}.app"
 contentsDirectory="${appDirectory}/Contents"
 macosDirectory="${contentsDirectory}/MacOS"
 resourcesDirectory="${contentsDirectory}/Resources"
 
 trashDirectory="${HOME}/.Trash"
+tempDirectory=""
+
+function makeTempDirectory () {
+    if [ -z $tempDirectory ] || [ ! -d $tempDirectory ]
+    then
+        tempDirectory=$(mktemp -d -t "${appName}")
+#         echo "Using temp directory ${tempDirectory}"
+    fi
+}
+
+function cleanUp () {
+    if [! -z $tempDirectory ]
+    then
+        rm -rf "${tempDirectory}"
+    fi
+}
 
 function toTrash () {
     source=$1
@@ -24,21 +50,58 @@ function toTrash () {
         target="$trashDirectory/$sourceName$num.$sourceExtension"
     done
     
-    echo $sourceBase
-    echo $sourceName
-    echo $sourceExtension
-    echo $sourceDir
-    echo $target
-    touch $target
+    mv $source $target
 }
+
+function getInstalledVersion () {
+    version=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${contentsDirectory}/Info.plist")
+    echo $version
+}
+
+function getAvailableVersion () {
+    makeTempDirectory
+    tempPlist="${tempDirectory}/temp.plist"
+    
+    curl --silent "${remoteContentsURL}/Info.plist" --output "${tempPlist}" 
+    
+    version=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${tempPlist}")
+    rm "${tempPlist}"
+    
+    echo $version
+}
+
+
+# /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString string 1.0.0" Info.plist
+# /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist
 
 
 # Check if the app is already installed
 if [ -d $appDirectory ] 
 then  # Update
-    echo "Directory ${appDirectory} exists." 
-    toTrash $appDirectory
+    installedVersion=$(getInstalledVersion)
+    availableVersion=$(getAvailableVersion)
+    
+    echo $installedVersion
+    echo $availableVersion
+    
+    if [ "$installedVersion" == "$availableVersion" ]
+    then
+        echo "Already running the lastest version: ${installedVersion}"
+        exit 0
+    fi
+    
+    echo "Moving old version to trash." 
+#     toTrash $appDirectory
 else  # New install
-    echo "Error: Directory ${appDirectory} does not exists."
+    echo "New install."
 fi
 
+mkdir -pv $macosDirectory
+mkdir -pv $resourcesDirectory
+
+curl --silent "${remoteContentsURL}/Info.plist" --output "${contentsDirectory}/Info.plist" 
+curl --silent "${remoteMacosURL}/${appName}" --output "${macosDirectory}/${appName}" 
+curl --silent "${remoteResourcesURL}/${appName}.icns" --output "${resourcesDirectory}/${appName}.icns" 
+
+
+cleanUp
