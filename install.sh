@@ -1,5 +1,5 @@
 #!/bin/bash
-# Like this: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+# Like this: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/danmalone326/stretchReminder/master/install.sh)"
 
 appName="stretchReminder"
 
@@ -74,6 +74,7 @@ function getAvailableVersion () {
 # /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString string 1.0.0" Info.plist
 # /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist
 
+echo "${appName}"
 
 # Check if the app is already installed
 if [ -d $appDirectory ] 
@@ -90,7 +91,7 @@ then  # Update
     echo "Upgrading from version ${installedVersion} to ${availableVersion}" 
     toTrash "${appDirectory}"
 else  # New install
-    echo "New install."
+    echo "New install of version ${availableVersion}"
 fi
 
 mkdir -pv $macosDirectory
