@@ -1,0 +1,12 @@
+#!/usr/bin/osascript
+
+on run
+    set myName to do shell script "id -F | cut -d\" \" -f1"
+    display dialog "GO" with icon stop
+end run
+
+on idle
+    display dialog "GO" with icon stop
+    return 5
+end idle
+ 
